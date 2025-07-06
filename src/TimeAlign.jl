@@ -1,6 +1,7 @@
 module TimeAlign
 
-    include("Aligner.jl")
+include("Aligner.jl")
 
-    export align_signals_naive
+export align_signals_naive
+
 end

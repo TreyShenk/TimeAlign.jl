@@ -6,5 +6,4 @@ end
 #TODO: Implement from https://ccrma.stanford.edu/~jos/sasp/Quadratic_Interpolation_Spectral_Peaks.html
 function peak_interp_quad(signal_peak)
     @assert len(signal_peak)==3
-    
 end
