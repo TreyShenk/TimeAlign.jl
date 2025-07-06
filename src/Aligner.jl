@@ -31,7 +31,7 @@ end
 
 function calc_alignment_naive(signals, max_lag)
     num_sigs = size(signals)[2]
-    shifts = zeros(Int, num_sigs)
+    shifts = zeros(Float64, num_sigs)
     @showprogress desc="Computing shifts"  for ii in 2:num_sigs
         shifts[ii] = find_optimal_lag(signals[:, 1], signals[:, ii], max_lag = max_lag)
     end
@@ -54,7 +54,7 @@ end
 function calc_alignment_complete(signals, max_lag)
     num_sigs = size(signals)[2]
     num_pairs = Int((num_sigs)*(num_sigs-1)/2)
-    all_shifts = zeros(Int, num_pairs)
+    all_shifts = zeros(Float64, num_pairs)
 
     ind = 1
     @showprogress desc="Computing complete shifts" for ii in 1:(num_sigs-1)
@@ -64,9 +64,9 @@ function calc_alignment_complete(signals, max_lag)
         end
     end
 
-    shifts = zeros(Int, num_sigs)
+    shifts = zeros(Float32, num_sigs)
     A = construct_A(num_sigs)
-    shifts[2:end] = round.(A\all_shifts)
+    shifts[2:end] = A\all_shifts
     return shifts
 end
 
@@ -82,7 +82,7 @@ function apply_lag_shift(signals, shifts)
     aligned_signals[:, 1] = signals[:, 1]
     for ii in 2:num_sigs
         sig_view = view(signals, :, ii)
-        aligned_signals[:, ii] = _apply_lag_shift_ind(sig_view, shifts[ii])
+        aligned_signals[:, ii] = _apply_lag_shift_ind(sig_view, Int(round(shifts[ii])))
     end
 
     return aligned_signals

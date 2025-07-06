@@ -1,4 +1,4 @@
-
+include("Utils.jl")
 
 function lag_loss(
     ref::AbstractVector{<:Real},
@@ -56,8 +56,8 @@ function find_optimal_lag(
     
     # Search all lags in the range
     all_losses = zeros(max_lag - min_lag + 1)
-
-    for (index, lag) in enumerate(min_lag:max_lag)
+    all_lags = min_lag:max_lag
+    for (index, lag) in enumerate(all_lags)
             all_losses[index] = lag_loss(ref, sig, lag)
     end
 
@@ -65,6 +65,8 @@ function find_optimal_lag(
 
     #TODO Peak interpolation can be performed here
 
-    best_lag = Int(min_ind + min_lag - 1)
+    peak_adjust = peak_interp_quad(all_losses[(min_ind-1):min_ind+1])
+
+    best_lag = all_lags[min_ind] + peak_adjust
     return best_lag
 end

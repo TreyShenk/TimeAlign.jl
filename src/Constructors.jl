@@ -10,7 +10,7 @@ function construct_A(N)
     total_nonzero = Int(num_pairs*2 - (N-1))
     col_inds = zeros(Int, total_nonzero)
     row_inds = zeros(Int, total_nonzero)
-    values = zeros(Int, total_nonzero)
+    values = zeros(Float64, total_nonzero)
     row_inds[1:(N-1)] = 1:(N-1)
 
     for ind in 1:(N-1)
