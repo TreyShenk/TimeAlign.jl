@@ -64,52 +64,76 @@ function create_test_signals_matrix()
     return signals, true_lags
 end
 
-function test_matrix_alignment()
+function create_test_signals_matrix2(n_samples, n_signals, max_offset)
+    """Create a matrix of test signals with known phase shifts."""
+    # n_samples = 200
+    # n_signals = 5
+    t = range(0, 4π, length=n_samples)
+    
+    signals = zeros(n_samples, n_signals)
+    true_lags = rand(-max_offset:max_offset, n_signals)  # Known true lags
+    true_lags[1] = 0
+    
+    # Create base signal
+    base_signal = sin.(t) + 0.3 * sin.(3 * t) + 0.1 * randn(n_samples)
+    
+    for i in 1:n_signals
+        lag = true_lags[i]
+        if lag >= 0
+            # Positive lag: advance signal
+            M = n_samples-lag
+
+            signals[1:M, i] .= base_signal[(lag+1):(lag+M)]
+            # signals[(lag+1):end, i] = base_signal[1:(n_samples-lag)]
+        else
+            # Negative lag: delay signal
+            abs_lag = abs(lag)
+            M = n_samples - abs_lag
+            signals[(abs_lag+1):(abs_lag+M), i] = base_signal[1:M]
+        end
+    end
+    
+    return signals, true_lags
+end
+
+function test_matrix_alignment(align_func)
     """Test the align_signals_matrix function."""
     println("=== Testing Matrix Signal Alignment ===")
     
     # Create test data
     signals, true_lags = create_test_signals_matrix()
     n_samples, n_signals = size(signals)
+
+    n_samples = 2000
+    n_signals = 100
+    max_offset = 20
+
+    signals, true_lags = create_test_signals_matrix2(n_samples, n_signals, max_offset)
+    # n_samples, n_signals = size(signals)
     
     println("Created test matrix: $n_samples samples × $n_signals signals")
-    println("True lags: $true_lags")
+    # println("True lags: $true_lags")
     
     # Test alignment with sequential processing
     max_lag = 50
     println("\nAligning signals with max_lag = $max_lag (sequential)...")
     
-    aligned_signals, estimated_lags = align_signals_complete(signals, max_lag)
+    aligned_signals, estimated_lags = align_func(signals, max_lag)
     
-    println("Estimated lags (sequential): $estimated_lags")
+    # println("Estimated lags (sequential): $estimated_lags")
     
 
     
     # Use sequential results for analysis
     # Compute accuracy
     lag_errors = estimated_lags .- true_lags
-    println("Lag errors (estimated - true): $lag_errors")
+    # println("Lag errors (estimated - true): $lag_errors")
     
     accuracy = sum(lag_errors .== 0) / length(lag_errors)
     println("Exact accuracy: $(round(accuracy * 100, digits=1))%")
     
     mae = mean(abs.(lag_errors))
     println("Mean Absolute Error: $(round(mae, digits=2))")
-    
-    # Compare signal quality before and after alignment
-    println("\n=== Signal Quality Comparison ===")
-    
-    reference = signals[:, 1]
-    
-    # Before alignment
-    mse_before = mean([mean((reference .- signals[:, i]).^2) for i in 2:n_signals])
-    
-    # After alignment  
-    mse_after = mean([mean((reference .- aligned_signals[:, i]).^2) for i in 2:n_signals])
-    
-    println("Average MSE before alignment: $(round(mse_before, digits=4))")
-    println("Average MSE after alignment:  $(round(mse_after, digits=4))")
-    println("Improvement factor: $(round(mse_before / mse_after, digits=2))x")
     
     return signals, aligned_signals, true_lags, estimated_lags
 end
@@ -162,10 +186,12 @@ function main()
     println("="^50)
     
     # Main functionality test
-    signals, aligned_signals, true_lags, estimated_lags = test_matrix_alignment()
+    align_signals_naive, align_signals_complete
+    signals, aligned_signals, true_lags, estimated_lags = test_matrix_alignment(align_signals_naive)
+    signals, aligned_signals, true_lags, estimated_lags = test_matrix_alignment(align_signals_complete)
     
     # Create visualization
-    plot_matrix_alignment_results(signals, aligned_signals, true_lags, estimated_lags)
+    # plot_matrix_alignment_results(signals, aligned_signals, true_lags, estimated_lags)
     
     
     println("="^50)

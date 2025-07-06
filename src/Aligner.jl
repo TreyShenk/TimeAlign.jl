@@ -3,6 +3,11 @@ include("Constructors.jl")
 using ProgressMeter
 using Statistics
 
+
+
+##############################################
+## Naive Calculation
+##############################################
 """
 align_signals_naive(signals, max_lag)
 
@@ -14,49 +19,76 @@ naive approach simply uses the one measurement for each estimate.
 """
 function align_signals_naive(signals, max_lag)
 
-    num_sigs = size(signals)[2]
-    shifts = zeros(Int, num_sigs)
-    
-    aligned_signals = copy(signals)
+    aligned_signals = zeros(eltype(signals), size(signals))
     aligned_signals[1, :] = signals[1, :]
 
-    @showprogress desc="Computing shifts" for ii in 2:num_sigs
-        shifts[ii] = find_optimal_lag(signals[:, 1], signals[:, ii], max_lag = max_lag)
-        aligned_signals[:, ii] = apply_lag_shift(signals[:, ii], shifts[ii])
-    end
+    shifts = calc_alignment_naive(signals, max_lag)
+
+    aligned_signals = apply_lag_shift(signals, shifts)
 
     return aligned_signals, shifts
 end
 
-function align_signals_complete(signals, max_lag)
+function calc_alignment_naive(signals, max_lag)
+    num_sigs = size(signals)[2]
+    shifts = zeros(Int, num_sigs)
+    @showprogress desc="Computing shifts"  for ii in 2:num_sigs
+        shifts[ii] = find_optimal_lag(signals[:, 1], signals[:, ii], max_lag = max_lag)
+    end
+    return shifts
+end
 
+
+
+##############################################
+## Complete  Method
+##############################################
+
+function align_signals_complete(signals, max_lag)
+    shifts = calc_alignment_complete(signals, max_lag)
+    aligned_signals = apply_lag_shift(signals, shifts)
+    return aligned_signals, shifts
+end
+
+
+function calc_alignment_complete(signals, max_lag)
     num_sigs = size(signals)[2]
     num_pairs = Int((num_sigs)*(num_sigs-1)/2)
     all_shifts = zeros(Int, num_pairs)
-    
-    aligned_signals = zeros(size(signals))
-    aligned_signals[1, :] = signals[1, :]
 
     ind = 1
     @showprogress desc="Computing complete shifts" for ii in 1:(num_sigs-1)
         for jj in (ii+1):num_sigs
             all_shifts[ind] = find_optimal_lag(signals[:, ii], signals[:, jj], max_lag = max_lag)
-            ind = ind+1
+            ind = ind+1 # this lazy cop out is keeping me from using threads
         end
     end
 
     shifts = zeros(Int, num_sigs)
     A = construct_A(num_sigs)
     shifts[2:end] = round.(A\all_shifts)
-
-    for ii in 2:num_sigs
-        aligned_signals[:, ii] = apply_lag_shift(signals[:, ii], shifts[ii])
-    end
-
-    return aligned_signals, shifts
+    return shifts
 end
 
-function apply_lag_shift(signal::AbstractVector{<:Real}, lag::Int)
+
+##############################################
+## Helpers
+##############################################
+# Maybe move to utils?
+function apply_lag_shift(signals, shifts)
+    println(size(signals))
+    num_sigs = size(signals)[2]
+    aligned_signals = zeros(eltype(signals), size(signals))
+    aligned_signals[:, 1] = signals[:, 1]
+    for ii in 2:num_sigs
+        sig_view = view(signals, :, ii)
+        aligned_signals[:, ii] = _apply_lag_shift_ind(sig_view, shifts[ii])
+    end
+
+    return aligned_signals
+end
+
+function _apply_lag_shift_ind(signal::AbstractVector{<:Real}, lag::Int)
     n = length(signal)
     shifted = zeros(n)
     
