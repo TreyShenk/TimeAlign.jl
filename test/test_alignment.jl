@@ -76,10 +76,10 @@ function test_matrix_alignment()
     println("True lags: $true_lags")
     
     # Test alignment with sequential processing
-    max_lag = 30
+    max_lag = 50
     println("\nAligning signals with max_lag = $max_lag (sequential)...")
     
-    aligned_signals, estimated_lags = align_signals_naive(signals, max_lag)
+    aligned_signals, estimated_lags = align_signals_complete(signals, max_lag)
     
     println("Estimated lags (sequential): $estimated_lags")
     

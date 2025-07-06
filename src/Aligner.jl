@@ -1,4 +1,5 @@
 include("LagLoss.jl")
+include("Constructors.jl")
 using ProgressMeter
 using Statistics
 
@@ -21,6 +22,34 @@ function align_signals_naive(signals, max_lag)
 
     @showprogress desc="Computing shifts" for ii in 2:num_sigs
         shifts[ii] = find_optimal_lag(signals[:, 1], signals[:, ii], max_lag = max_lag)
+        aligned_signals[:, ii] = apply_lag_shift(signals[:, ii], shifts[ii])
+    end
+
+    return aligned_signals, shifts
+end
+
+function align_signals_complete(signals, max_lag)
+
+    num_sigs = size(signals)[2]
+    num_pairs = Int((num_sigs)*(num_sigs-1)/2)
+    all_shifts = zeros(Int, num_pairs)
+    
+    aligned_signals = zeros(size(signals))
+    aligned_signals[1, :] = signals[1, :]
+
+    ind = 1
+    @showprogress desc="Computing complete shifts" for ii in 1:(num_sigs-1)
+        for jj in (ii+1):num_sigs
+            all_shifts[ind] = find_optimal_lag(signals[:, ii], signals[:, jj], max_lag = max_lag)
+            ind = ind+1
+        end
+    end
+
+    shifts = zeros(Int, num_sigs)
+    A = construct_A(num_sigs)
+    shifts[2:end] = round.(A\all_shifts)
+
+    for ii in 2:num_sigs
         aligned_signals[:, ii] = apply_lag_shift(signals[:, ii], shifts[ii])
     end
 
