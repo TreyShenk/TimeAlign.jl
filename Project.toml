@@ -1,4 +1,5 @@
 name = "TimeAlign"
+uuid = "677b9b80-25b0-4cb9-a79b-561ce2bba8f2"
 version = "0.0.1"
 
 [deps]
