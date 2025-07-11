@@ -50,18 +50,21 @@ function align_signals_complete(signals, max_lag)
     return aligned_signals, shifts
 end
 
+function _calc_ind(ii, jj)
+    while (ii>0)
+        
+    end
+end
 
 function calc_alignment_complete(signals, max_lag)
     num_sigs = size(signals)[2]
     num_pairs = Int((num_sigs)*(num_sigs-1)/2)
     all_shifts = zeros(Float64, num_pairs)
 
-    ind = 1
-    @showprogress desc="Computing complete shifts" for ii in 1:(num_sigs-1)
-        for jj in (ii+1):num_sigs
-            all_shifts[ind] = find_optimal_lag(signals[:, ii], signals[:, jj], max_lag = max_lag)
-            ind = ind+1 # this lazy cop out is keeping me from using threads
-        end
+    pairs = [(ii, jj) for ii in 1:(num_sigs -1) for jj in (ii+1):num_sigs]
+    @showprogress desc="Computing complete shifts" Threads.@threads for k in eachindex(pairs)
+        ii, jj = pairs[k]
+        all_shifts[k] = find_optimal_lag(signals[:, ii], signals[:, jj], max_lag = max_lag)
     end
 
     shifts = zeros(Float32, num_sigs)
