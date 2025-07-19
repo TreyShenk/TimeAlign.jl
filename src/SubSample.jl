@@ -3,21 +3,24 @@ using DSP
 abstract type SubsampleShiftMethod end
 
 struct LagrangeInterpolation <: SubsampleShiftMethod
-    N::Int
+    order::Int
 end
 
 struct ThiranAllPass <: SubsampleShiftMethod
-    N::Int
+    order::Int
 end
 
 function subsample_shift(x, D, m::SubsampleShiftMethod)
-    h = calc_filter(D, m)
-    output = conv(x, h)
+    b, a = calc_filter(D, m)
+    output = filt(b, a, x)
+    
+    #TODO: Trim the output
+    return output
 end
 
 function calc_filter(D, m::LagrangeInterpolation)
     # Construct and apply filter
-    N = m.N
+    N = m.order
     h = ones(Float64, N+1)
     for n in 0:N, k in 0:N
         if k != n
@@ -25,20 +28,21 @@ function calc_filter(D, m::LagrangeInterpolation)
             h[n+1] = h[n+1]*new_factor
         end
     end
-    return h
+    return (h, 1)
 end
 
+
 function calc_filter(D, m::ThiranAllPass)
-    N = m.N
+    N = m.order
     a = ones(Float64, N+1)
     for k in 0:N
         a[k+1] = -1*binomial(N, k)
     end
 
-    for k in 0:N, n = 0:N
+    for k in 1:N, n = 0:N
         new_factor = (D - N + n)/(D - N + k + n)
         a[k+1] = a[k+1]*new_factor
     end
 
-    return a
+    return (1, a)
 end
