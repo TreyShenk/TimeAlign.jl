@@ -50,11 +50,11 @@ function align_signals_complete(signals, max_lag)
     return aligned_signals, shifts
 end
 
-function _calc_ind(ii, jj)
-    while (ii>0)
+# function _calc_ind(ii, jj)
+#     while (ii>0)
         
-    end
-end
+#     end
+# end
 
 function calc_alignment_complete(signals, max_lag)
     num_sigs = size(signals)[2]
@@ -69,7 +69,8 @@ function calc_alignment_complete(signals, max_lag)
 
     shifts = zeros(Float32, num_sigs)
     A = construct_A(num_sigs)
-    shifts[2:end] = A\all_shifts
+    AtA_inv = construct_AtA_inv(num_sigs)
+    shifts[2:end] = AtA_inv*(A'*all_shifts)
     return shifts
 end
 

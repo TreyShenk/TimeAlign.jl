@@ -1,4 +1,5 @@
 include("Utils.jl")
+using ThreadsX
 
 abstract type MetricType end
 struct MSE <: MetricType end

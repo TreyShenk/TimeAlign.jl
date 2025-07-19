@@ -13,15 +13,14 @@ function construct_A(N)
     values = zeros(Float64, total_nonzero)
     row_inds[1:(N-1)] = 1:(N-1)
 
+    # Populate the standard shifts with the main reference
     for ind in 1:(N-1)
         row_inds[ind] = ind
         col_inds[ind] = ind
         values[ind] = 1
     end
-
-    index = N
-
     
+    # Populate matrix for all extra pairs
     ref_ind = 1
     sig_ind = 2
     raw_ind = N
@@ -51,4 +50,18 @@ function construct_A(N)
     A = sparse(row_inds, col_inds, values)
     
     return A
+end
+
+"""
+    construct_AtA_inv(N)
+
+Computes the (A^T A)^-1 matrix given by Equation 21. This is needed to solve for the 
+estimated offsets, as shown in Equation 17.
+"""
+function construct_AtA_inv(N)
+    AtA_inv = fill(1/N, (N-1, N-1))
+    for ii in 1:(N-1)
+        AtA_inv[ii, ii] = 2/N
+    end
+    return AtA_inv
 end
