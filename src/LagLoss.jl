@@ -1,5 +1,5 @@
 include("Utils.jl")
-using ThreadsX
+# using ThreadsX
 
 abstract type MetricType end
 struct MSE <: MetricType end
@@ -58,7 +58,8 @@ function find_optimal_lag(
     sig::AbstractVector{<:Real};
     min_lag::Union{Int, Nothing} = nothing,
     max_lag::Union{Int, Nothing} = nothing,
-    lag_metric::MetricType = MSE()
+    lag_metric::MetricType = MSE(),
+    do_peak_interp::Bool = true
 )
     if length(ref) != length(sig)
         error("ref and sig must have the same length")
@@ -84,8 +85,6 @@ function find_optimal_lag(
     if min_lag > max_lag
         error("min_lag ($min_lag) must be ≤ max_lag ($max_lag)")
     end
-
-    
     
     # Search all lags in the range
     all_losses = zeros(max_lag - min_lag + 1)
@@ -97,14 +96,18 @@ function find_optimal_lag(
 
     min_ind = selector(all_losses)
 
-    if min_ind == 1
-        peak_adjust = 0.0
-    elseif min_ind == length(all_losses)
-        peak_adjust = 0.0
+    if do_peak_interp
+        if min_ind == 1
+            peak_adjust = 0.0
+        elseif min_ind == length(all_losses)
+            peak_adjust = 0.0
+        else
+            peak_adjust = peak_interp_quad(all_losses[(min_ind-1):min_ind+1])
+        end
+        best_lag = all_lags[min_ind] + peak_adjust
     else
-        peak_adjust = peak_interp_quad(all_losses[(min_ind-1):min_ind+1])
+        best_lag = all_lags[min_ind]
     end
 
-    best_lag = all_lags[min_ind] + peak_adjust
     return best_lag
 end
