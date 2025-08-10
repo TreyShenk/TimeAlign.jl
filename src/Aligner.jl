@@ -1,9 +1,29 @@
 include("LagLoss.jl")
 include("Constructors.jl")
+include("SubSample.jl")
+
 using ProgressMeter
 using Statistics
 
+function align_signals(X::AbstractMatrix; method::Symbol=:fast, max_lag::Int=200,
+    truncate_output::Bool=True, do_peak_interp::Bool=true, do_subsample_shift::Bool=True,
+    subsample_method::SubsampleShiftMethod)
 
+    #Calculate shifts based on chosen method
+    if method == :fast
+        shift_est = calc_alignment_naive(X, max_lag, do_peak_interp)
+    elseif ethod == :complete
+        shift_est = calc_alignment_complete(X, max_lag, do_peak_interp)
+    end
+
+    # Apply shifts
+    if do_subsample_shift
+        #TODO replace with subsample shift capable function
+        aligned_signals = apply_lag_shift(X, shift_est)
+    else
+        aligned_signals = apply_lag_shift(X, shift_est)
+    end
+end
 
 ##############################################
 ## Naive Calculation
@@ -17,7 +37,7 @@ naive approach simply uses the one measurement for each estimate.
 
 
 """
-function align_signals_naive(signals, max_lag)
+function align_signals_naive(signals::AbstractMatrix, max_lag::Int, do_peak_interp::Bool)
 
     aligned_signals = zeros(eltype(signals), size(signals))
     aligned_signals[1, :] = signals[1, :]
@@ -29,11 +49,11 @@ function align_signals_naive(signals, max_lag)
     return aligned_signals, shifts
 end
 
-function calc_alignment_naive(signals, max_lag)
+function calc_alignment_naive(signals, max_lag, do_peak_interp::Bool = true)
     num_sigs = size(signals)[2]
     shifts = zeros(Float64, num_sigs)
     @showprogress desc="Computing shifts"  for ii in 2:num_sigs
-        shifts[ii] = find_optimal_lag(signals[:, 1], signals[:, ii], max_lag = max_lag)
+        shifts[ii] = find_optimal_lag(signals[:, 1], signals[:, ii], max_lag = max_lag, do_peak_interp = do_peak_interp)
     end
     return shifts
 end
@@ -50,13 +70,7 @@ function align_signals_complete(signals, max_lag)
     return aligned_signals, shifts
 end
 
-# function _calc_ind(ii, jj)
-#     while (ii>0)
-        
-#     end
-# end
-
-function calc_alignment_complete(signals, max_lag)
+function calc_alignment_complete(signals, max_lag, do_peak_interp::Bool = true)
     num_sigs = size(signals)[2]
     num_pairs = Int((num_sigs)*(num_sigs-1)/2)
     all_shifts = zeros(Float64, num_pairs)
@@ -64,7 +78,8 @@ function calc_alignment_complete(signals, max_lag)
     pairs = [(ii, jj) for ii in 1:(num_sigs -1) for jj in (ii+1):num_sigs]
     @showprogress desc="Computing complete shifts" Threads.@threads for k in eachindex(pairs)
         ii, jj = pairs[k]
-        all_shifts[k] = find_optimal_lag(signals[:, ii], signals[:, jj], max_lag = max_lag)
+        all_shifts[k] = find_optimal_lag(signals[:, ii], signals[:, jj], 
+            max_lag = max_lag, do_peak_interp = do_peak_interp)
     end
 
     shifts = zeros(Float32, num_sigs)

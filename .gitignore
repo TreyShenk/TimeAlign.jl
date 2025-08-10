@@ -30,3 +30,5 @@ JuliaLocalPreferences.toml
 *.js
 *.css
 *.woff
+
+notebooks/dev/
