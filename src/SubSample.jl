@@ -36,7 +36,7 @@ function calc_filter(D, m::ThiranAllPass)
     N = m.order
     a = ones(Float64, N+1)
     for k in 0:N
-        a[k+1] = -1*binomial(N, k)
+        a[k+1] = ((-1)^k)*binomial(N, k)
     end
 
     for k in 1:N, n = 0:N

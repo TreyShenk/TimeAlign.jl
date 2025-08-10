@@ -1,3 +1,4 @@
+using Statistics
 
 #Implemented from https://ccrma.stanford.edu/~jos/sasp/Quadratic_Interpolation_Spectral_Peaks.html
 function peak_interp_quad(signal_peak)
@@ -8,4 +9,8 @@ function peak_interp_quad(signal_peak)
 
     p = (1/2)*(α - γ)/(α - 2*β + γ)
     return p
+end
+
+function mse(x, y)
+    return mean(abs.(x .- y).^2)
 end
