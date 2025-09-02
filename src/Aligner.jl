@@ -5,6 +5,7 @@ include("SubSample.jl")
 using ProgressMeter
 using Statistics
 
+#TODO Max lag should be set to something based on the data length
 function align_signals(X::AbstractMatrix; method::Symbol=:fast, max_lag::Int=200,
     truncate_output::Bool=True, do_peak_interp::Bool=true, do_subsample_shift::Bool=True,
     subsample_method::SubsampleShiftMethod)
@@ -19,34 +20,11 @@ function align_signals(X::AbstractMatrix; method::Symbol=:fast, max_lag::Int=200
     # Apply shifts
     if do_subsample_shift
         #TODO replace with subsample shift capable function
+        print("Subsample shift not yet implemented.")
         aligned_signals = apply_lag_shift(X, shift_est)
     else
         aligned_signals = apply_lag_shift(X, shift_est)
     end
-end
-
-##############################################
-## Naive Calculation
-##############################################
-"""
-align_signals_naive(signals, max_lag)
-
-Aligns all signals using the first column as the reference signal. This
-naive approach simply uses the one measurement for each estimate.
-
-
-
-"""
-function align_signals_naive(signals::AbstractMatrix, max_lag::Int, do_peak_interp::Bool)
-
-    aligned_signals = zeros(eltype(signals), size(signals))
-    aligned_signals[1, :] = signals[1, :]
-
-    shifts = calc_alignment_naive(signals, max_lag)
-
-    aligned_signals = apply_lag_shift(signals, shifts)
-
-    return aligned_signals, shifts
 end
 
 function calc_alignment_naive(signals, max_lag, do_peak_interp::Bool = true)
@@ -56,18 +34,6 @@ function calc_alignment_naive(signals, max_lag, do_peak_interp::Bool = true)
         shifts[ii] = find_optimal_lag(signals[:, 1], signals[:, ii], max_lag = max_lag, do_peak_interp = do_peak_interp)
     end
     return shifts
-end
-
-
-
-##############################################
-## Complete  Method
-##############################################
-
-function align_signals_complete(signals, max_lag)
-    shifts = calc_alignment_complete(signals, max_lag)
-    aligned_signals = apply_lag_shift(signals, shifts)
-    return aligned_signals, shifts
 end
 
 function calc_alignment_complete(signals, max_lag, do_peak_interp::Bool = true)
@@ -93,6 +59,7 @@ end
 ##############################################
 ## Helpers
 ##############################################
+#TODO Give options for truncation. Check out how matlab does it.
 # Maybe move to utils?
 function apply_lag_shift(signals, shifts)
     println(size(signals))
